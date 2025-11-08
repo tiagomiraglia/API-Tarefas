@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # API de Tarefas
 
 API RESTful simples para cadastro de tarefas usando Node.js e Express.
@@ -32,3 +33,7 @@ API RESTful simples para cadastro de tarefas usando Node.js e Express.
 
 ## Licença
 MIT
+=======
+# API-Tarefas
+API básica para tarefas
+>>>>>>> f9b40ebaefe1afa13ed616329b4344b4d2c3363d
