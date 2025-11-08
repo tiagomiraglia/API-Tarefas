@@ -5,7 +5,7 @@ API RESTful simples para cadastro de tarefas usando Node.js e Express.
 
 ## Funcionalidades
 - Cadastro, listagem, atualização e remoção de tarefas
-- Rotas e campos em português
+- Rotas e campos
 - Estrutura simples e fácil de entender
 
 ## Como usar
