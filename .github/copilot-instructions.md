@@ -1,0 +1,4 @@
+- [x] Estrutura básica do projeto criada
+- [ ] Instalar dependências
+- [ ] Testar execução
+- [ ] Publicar no GitHub
