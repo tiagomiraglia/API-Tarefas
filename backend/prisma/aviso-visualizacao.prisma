@@ -1,0 +1,9 @@
+model AvisoVisualizacao {
+  id        Int      @id @default(autoincrement())
+  aviso_id  Int
+  usuario_id Int
+  visualizado_em DateTime @default(now())
+  aviso     Aviso   @relation(fields: [aviso_id], references: [id])
+  usuario   Usuario @relation(fields: [usuario_id], references: [id])
+  @@unique([aviso_id, usuario_id])
+}
