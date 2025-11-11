@@ -386,22 +386,22 @@ export default function GerenciarTags() {
 
       {/* Modal de Criar/Editar Tag */}
       {showModal && (
-        <div className="modal show d-block" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }}>
+        <div className="modal show d-block gerenciar-tags-modal-overlay">
           <div className="modal-dialog">
-            <div className="modal-content">
-              <div className="modal-header">
-                <h5 className="modal-title">
+            <div className="modal-content gerenciar-tags-modal-content">
+              <div className="modal-header gerenciar-tags-modal-header">
+                <h5 className="modal-title gerenciar-tags-modal-title">
                   {editando ? 'Editar Tag' : 'Nova Tag'}
                 </h5>
-                <button className="btn-close" onClick={fecharModal}></button>
+                <button className="btn-close gerenciar-tags-modal-close" onClick={fecharModal}></button>
               </div>
-              <div className="modal-body">
+              <div className="modal-body gerenciar-tags-modal-body">
                 {/* Nome */}
                 <div className="mb-3">
-                  <label className="form-label">Nome da Tag</label>
+                  <label className="form-label gerenciar-tags-modal-label">Nome da Tag</label>
                   <input
                     type="text"
-                    className="form-control"
+                    className="form-control gerenciar-tags-modal-input"
                     value={nome}
                     onChange={(e) => setNome(e.target.value)}
                     placeholder="Ex: Urgente, Orçamento, Suporte..."
@@ -410,16 +410,13 @@ export default function GerenciarTags() {
 
                 {/* Cor */}
                 <div className="mb-3">
-                  <label className="form-label">Cor</label>
+                  <label className="form-label gerenciar-tags-modal-label">Cor</label>
                   <div className="row g-2">
                     {CORES_DISPONIVEIS.map(corOpcao => (
                       <div key={corOpcao.valor} className="col-4">
                         <button
-                          className={`btn w-100 ${cor === corOpcao.valor ? 'border-3 border-dark' : ''}`}
-                          style={{
-                            backgroundColor: corOpcao.valor,
-                            color: '#fff'
-                          }}
+                          className={`btn w-100 gerenciar-tags-btn-cor${cor === corOpcao.valor ? ' gerenciar-tags-btn-cor-active' : ''}`}
+                          data-cor={corOpcao.valor}
                           onClick={() => setCor(corOpcao.valor)}
                         >
                           {corOpcao.nome}
@@ -431,16 +428,16 @@ export default function GerenciarTags() {
 
                 {/* Ícone */}
                 <div className="mb-3">
-                  <label className="form-label">Ícone</label>
+                  <label className="form-label gerenciar-tags-modal-label">Ícone</label>
                   <div className="row g-2">
                     {ICONES_DISPONIVEIS.map(iconeOpcao => (
                       <div key={iconeOpcao.id} className="col-3">
                         <button
-                          className={`btn btn-outline-secondary w-100 ${icone === iconeOpcao.id ? 'active' : ''}`}
+                          className={`btn btn-outline-secondary w-100 gerenciar-tags-btn-icone${icone === iconeOpcao.id ? ' gerenciar-tags-btn-icone-active' : ''}`}
                           onClick={() => setIcone(iconeOpcao.id)}
                         >
-                          <i className={`bi ${iconeOpcao.icon}`} style={{ fontSize: '1.5rem' }}></i>
-                          <div style={{ fontSize: '0.7rem' }}>{iconeOpcao.nome}</div>
+                          <i className={`bi ${iconeOpcao.icon} gerenciar-tags-btn-icone-icon`}></i>
+                          <div className="gerenciar-tags-btn-icone-label">{iconeOpcao.nome}</div>
                         </button>
                       </div>
                     ))}
@@ -449,10 +446,10 @@ export default function GerenciarTags() {
 
                 {/* Ordem */}
                 <div className="mb-3">
-                  <label className="form-label">Ordem de Exibição</label>
+                  <label className="form-label gerenciar-tags-modal-label">Ordem de Exibição</label>
                   <input
                     type="number"
-                    className="form-control"
+                    className="form-control gerenciar-tags-modal-input"
                     value={ordem}
                     onChange={(e) => setOrdem(Number(e.target.value))}
                     min="0"
@@ -462,28 +459,23 @@ export default function GerenciarTags() {
 
                 {/* Preview */}
                 <div className="mb-3">
-                  <label className="form-label">Preview</label>
+                  <label className="form-label gerenciar-tags-modal-label">Preview</label>
                   <div>
                     <span
-                      className="badge"
-                      style={{
-                        backgroundColor: cor,
-                        color: '#fff',
-                        fontSize: '1rem',
-                        padding: '0.5rem 1rem'
-                      }}
+                      className="badge gerenciar-tags-badge-preview"
+                      data-cor={cor}
                     >
-                      <i className={`bi bi-${icone} me-2`}></i>
+                      <i className={`bi bi-${icone} me-2 gerenciar-tags-badge-preview-icon`}></i>
                       {nome || 'Nome da Tag'}
                     </span>
                   </div>
                 </div>
               </div>
-              <div className="modal-footer">
-                <button className="btn btn-secondary" onClick={fecharModal}>
+              <div className="modal-footer gerenciar-tags-modal-footer">
+                <button className="btn btn-secondary gerenciar-tags-btn-cancel" onClick={fecharModal}>
                   Cancelar
                 </button>
-                <button className="btn btn-success" onClick={salvarTag}>
+                <button className="btn btn-success gerenciar-tags-btn-save" onClick={salvarTag}>
                   <i className="bi bi-check-circle me-2"></i>
                   Salvar
                 </button>

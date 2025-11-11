@@ -13,6 +13,19 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+[data-bs-theme="light"] {
+  color: #213547;
+  background-color: #ffffff;
+}
+
+[data-bs-theme="light"] a:hover {
+  color: #747bff;
+}
+
+[data-bs-theme="light"] button {
+  background-color: #f9f9f9;
+}
+
 a {
   font-weight: 500;
   color: #646cff;
@@ -30,24 +43,32 @@ body {
   min-height: 100vh;
 }
 
-/* Force dark theme for tables */
-.table {
+/* Force theme for tables */
+[data-bs-theme="dark"] .table {
   --bs-table-bg: transparent !important;
   --bs-table-striped-bg: transparent !important;
   --bs-table-hover-bg: transparent !important;
 }
 
-.table > thead {
+[data-bs-theme="dark"] .table > thead {
   background: #0f1115 !important;
 }
 
-.table > tbody {
+[data-bs-theme="dark"] .table > tbody {
   background: #1a1d29 !important;
 }
 
-.table th,
-.table td {
+[data-bs-theme="dark"] .table th,
+[data-bs-theme="dark"] .table td {
   background: transparent !important;
+}
+
+[data-bs-theme="light"] .table > thead {
+  background: #f8f9fa !important;
+}
+
+[data-bs-theme="light"] .table > tbody {
+  background: #ffffff !important;
 }
 
 h1 {

@@ -1,5 +1,4 @@
 import React from 'react';
-import KanbanUsuario from '../components/KanbanUsuario';
 import Navbar from '../components/Navbar';
 
 const DashboardUser: React.FC = () => {
@@ -9,7 +8,7 @@ const DashboardUser: React.FC = () => {
     <>
       <Navbar userName={nome} userFoto={foto} />
       <div style={{ paddingTop: 80 }}>
-        <KanbanUsuario />
+        <div>Dashboard User</div>
       </div>
     </>
   );

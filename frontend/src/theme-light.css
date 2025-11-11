@@ -1,0 +1,18 @@
+/* Light Nynch Theme */
+:root {
+  --bg: #f5f7fb;
+  --card: #fff;
+  --accent: #2563eb;
+  --muted: #6b7280;
+  --text: #213547;
+  --border: #e6edf3;
+}
+body {
+  background: var(--bg);
+  color: var(--text);
+}
+.card {
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--border);
+}

@@ -35,7 +35,7 @@ export default function useAvisoAtivoCount() {
 
   async function fetchCount() {
     try {
-      const res = await fetch(`${API_URL}/api/avisos/ativo`, {
+      const res = await fetch(`${API_URL}/avisos/ativo`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       });
       const data = await res.json();

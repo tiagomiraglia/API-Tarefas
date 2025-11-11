@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { toast } from 'react-toastify';
 import { useNavigate } from 'react-router-dom';
 import { login, type LoginResponse } from '../services/api';
+import ThemeToggle from '../components/ThemeToggle';
 
 // Tela de Login
 export default function Login() {
@@ -103,77 +104,99 @@ export default function Login() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', minWidth: '100vw', width: '100vw', height: '100vh', background: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: 0, padding: 0, fontFamily: 'Inter, sans-serif' }}>
-      <div className="shadow-lg" style={{ maxWidth: 420, minWidth: 320, width: '100%', borderRadius: 16, background: '#1e293b', padding: '40px 32px', boxShadow: '0 8px 32px rgba(0,0,0,0.3)', border: '1px solid #334155' }}>
-        <div className="d-flex flex-column align-items-center mb-4">
-          <div className="rounded-3 p-3 mb-3" style={{background: '#f97316'}}>
-            <i className="bi bi-kanban-fill text-white" style={{ fontSize: 32 }} />
-          </div>
-          <h2 className="fw-bold mb-2 text-center" style={{ color: '#f8fafc', letterSpacing: -0.5, fontSize: 28 }}>Entrar</h2>
-          <div className="text-center" style={{ color: '#cbd5e1', fontSize: 14 }}>Acesse sua conta para gerenciar atendimentos</div>
-        </div>
-        <div>
-          <form onSubmit={aoSubmeter} noValidate>
-            <div className="mb-3">
-              <label htmlFor="email" className="form-label fw-semibold" style={{ color: '#f8fafc', fontSize: 14 }}>E-mail</label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                className="form-control"
-                style={{ borderRadius: 8, border: erroEmail ? '1px solid #dc2626' : '1px solid #475569', background: '#0f172a', color: '#f8fafc', padding: '12px 16px', fontSize: 15 }}
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="seu@exemplo.com"
-                aria-invalid={!!erroEmail}
-                aria-describedby={erroEmail ? 'email-error' : undefined}
-                onBlur={() => {
-                  if (email && !emailValido(email)) setErroEmail('E-mail inválido');
-                }}
-              />
-              {erroEmail && <div id="email-error" style={{ color: '#dc2626', fontSize: 13, marginTop: 4 }}>{erroEmail}</div>}
+    <div className="login-bg">
+      {/* Navbar fixa no topo, igual Home */}
+      <nav className="navbar navbar-expand-lg navbar-dark shadow-sm sticky-top home-navbar w-100" style={{position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100}}>
+        <div className="container py-2">
+          <a className="navbar-brand fw-bold d-flex align-items-center gap-2" href="/">
+            <div className="home-navbar-icon">
+              <i className="bi bi-kanban-fill text-white fs-4"></i>
             </div>
-            <div className="mb-3">
-              <label htmlFor="password" className="form-label fw-semibold" style={{ color: '#f8fafc', fontSize: 14 }}>Senha</label>
-              <div className="position-relative">
+            <span className="fs-4 home-navbar-title">AWA</span>
+          </a>
+          <div className="d-flex gap-2 align-items-center">
+            <a className="btn px-4 fw-semibold shadow-sm home-navbar-register" href="/registro">
+              <i className="bi bi-person-plus me-2"></i>Criar conta
+            </a>
+            {/* Theme toggle no topo da Login */}
+            <div className="ms-2">
+              <ThemeToggle />
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* Centraliza o cartão abaixo da navbar */}
+      <div className="login-bg-content">
+        <div className="login-card">
+          <div className="login-header">
+            <div className="login-icon">
+              <i className="bi bi-kanban-fill"></i>
+            </div>
+            <h2 className="login-title">Entrar</h2>
+            <div className="login-desc">Acesse sua conta para gerenciar atendimentos</div>
+          </div>
+          <div>
+            <form onSubmit={aoSubmeter} noValidate>
+              <div className="mb-3">
+                <label htmlFor="email" className="login-label">E-mail</label>
                 <input
-                  id="password"
-                  name="password"
-                  type={mostrarSenha ? 'text' : 'password'}
-                  className="form-control"
-                  style={{ borderRadius: 8, border: erroSenha ? '1px solid #dc2626' : '1px solid #475569', background: '#0f172a', color: '#f8fafc', padding: '12px 16px', fontSize: 15, paddingRight: 45 }}
-                  value={senha}
-                  onChange={(e) => setSenha(e.target.value)}
-                  placeholder="••••••••"
-                  aria-invalid={!!erroSenha}
-                  aria-describedby={erroSenha ? 'password-error' : undefined}
+                  id="email"
+                  name="email"
+                  type="email"
+                  className={`login-input ${erroEmail ? 'login-input-error' : ''}`}
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="seu@exemplo.com"
+                  aria-invalid={!!erroEmail}
+                  aria-describedby={erroEmail ? 'email-error' : undefined}
                   onBlur={() => {
-                    if (senha && senha.length < 6) setErroSenha('Senha curta');
+                    if (email && !emailValido(email)) setErroEmail('E-mail inválido');
                   }}
                 />
-                <button
-                  type="button"
-                  style={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: 8 }}
-                  tabIndex={-1}
-                  aria-pressed={mostrarSenha}
-                  onClick={() => setMostrarSenha((s) => !s)}
-                  title={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}
-                >
-                  <i className={`bi ${mostrarSenha ? 'bi-eye-slash' : 'bi-eye'}`}></i>
-                </button>
+                {erroEmail && <div id="email-error" className="login-error">{erroEmail}</div>}
               </div>
-              {erroSenha && <div id="password-error" style={{ color: '#dc2626', fontSize: 13, marginTop: 4 }}>{erroSenha}</div>}
-            </div>
-            {erroEnvio && <div className="alert alert-danger py-2 mb-3 text-center" style={{ borderRadius: 8, fontSize: 14, background: '#dc2626', border: 'none', color: '#fff' }}>{erroEnvio}</div>}
-            <button type="submit" disabled={carregando} className="btn w-100 fw-bold mb-3" style={{ background: '#f97316', color: '#fff', fontSize: 16, borderRadius: 8, padding: '12px', border: 'none', boxShadow: '0 4px 12px rgba(249, 115, 22, 0.3)' }}>
-              {carregando ? <span className="spinner-border spinner-border-sm me-2"></span> : <i className="bi bi-box-arrow-in-right me-2"></i>}
-              Entrar
-            </button>
-            <div className="d-flex justify-content-between mt-4" style={{ color: '#94a3b8', fontSize: 14 }}>
-              <a href="/recuperacao" style={{ color: '#f97316', textDecoration: 'none', fontWeight: 500 }}><i className="bi bi-question-circle me-1"></i>Esqueci minha senha</a>
-              <a href="/registro" style={{ color: '#f97316', textDecoration: 'none', fontWeight: 500 }}><i className="bi bi-person-plus me-1"></i>Criar conta</a>
-            </div>
-          </form>
+              <div className="mb-3">
+                <label htmlFor="password" className="login-label">Senha</label>
+                <div className="login-password-row">
+                  <input
+                    id="password"
+                    name="password"
+                    type={mostrarSenha ? 'text' : 'password'}
+                    className={`login-input ${erroSenha ? 'login-input-error' : ''}`}
+                    value={senha}
+                    onChange={(e) => setSenha(e.target.value)}
+                    placeholder="••••••••"
+                    aria-invalid={!!erroSenha}
+                    aria-describedby={erroSenha ? 'password-error' : undefined}
+                    onBlur={() => {
+                      if (senha && senha.length < 6) setErroSenha('Senha curta');
+                    }}
+                  />
+                  <button
+                    type="button"
+                    className="login-show-pass"
+                    tabIndex={-1}
+                    aria-pressed={mostrarSenha}
+                    onClick={() => setMostrarSenha((s) => !s)}
+                    title={mostrarSenha ? 'Ocultar senha' : 'Mostrar senha'}
+                  >
+                    <i className={`bi ${mostrarSenha ? 'bi-eye-slash' : 'bi-eye'}`}></i>
+                  </button>
+                </div>
+                {erroSenha && <div id="password-error" className="login-error">{erroSenha}</div>}
+              </div>
+              {erroEnvio && <div className="login-alert-error">{erroEnvio}</div>}
+              <button type="submit" disabled={carregando} className="login-btn">
+                {carregando ? <span className="spinner-border spinner-border-sm me-2"></span> : <i className="bi bi-box-arrow-in-right me-2"></i>}
+                Entrar
+              </button>
+              <div className="login-footer">
+                <a href="/recuperacao" className="login-link"><i className="bi bi-question-circle me-1"></i>Esqueci minha senha</a>
+                <a href="/registro" className="login-link"><i className="bi bi-person-plus me-1"></i>Criar conta</a>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
     </div>

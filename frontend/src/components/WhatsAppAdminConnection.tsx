@@ -1,1 +1,0 @@
-// Card removido conforme solicitado

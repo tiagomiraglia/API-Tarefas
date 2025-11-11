@@ -38,23 +38,22 @@ const ResetarSenhaTemporaria: React.FC = () => {
   }
 
   return (
-    <div style={{ minHeight: '100vh', minWidth: '100vw', width: '100vw', height: '100vh', background: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: 0, padding: 0, fontFamily: 'Inter, sans-serif' }}>
-      <div className="shadow-lg" style={{ maxWidth: 420, minWidth: 320, width: '100%', borderRadius: 16, background: '#1e293b', padding: '40px 32px', boxShadow: '0 8px 32px rgba(0,0,0,0.3)', border: '1px solid #334155' }}>
+    <div className="resetar-senha-bg">
+      <div className="shadow-lg resetar-senha-card">
         <div className="d-flex flex-column align-items-center mb-4">
-          <div className="rounded-3 p-3 mb-3" style={{background: '#f97316'}}>
-            <i className="bi bi-shield-lock text-white" style={{ fontSize: 32 }} />
+          <div className="rounded-3 p-3 mb-3 resetar-senha-icon-bg">
+            <i className="bi bi-shield-lock text-white resetar-senha-icon" />
           </div>
-          <h2 className="fw-bold mb-2 text-center" style={{ color: '#f8fafc', letterSpacing: -0.5, fontSize: 28 }}>Defina sua nova senha</h2>
-          <div className="text-center" style={{ color: '#cbd5e1', fontSize: 14 }}>Crie uma senha segura para sua conta</div>
+          <h2 className="fw-bold mb-2 text-center resetar-senha-title">Defina sua nova senha</h2>
+          <div className="text-center resetar-senha-desc">Crie uma senha segura para sua conta</div>
         </div>
         <form onSubmit={handleSubmit}>
           <div className="mb-3">
-            <label htmlFor="novaSenha" className="form-label fw-semibold" style={{ color: '#f8fafc', fontSize: 14 }}>Nova senha</label>
+            <label htmlFor="novaSenha" className="form-label fw-semibold resetar-senha-label">Nova senha</label>
             <input
               id="novaSenha"
               type="password"
-              className="form-control"
-              style={{ borderRadius: 8, border: '1px solid #475569', background: '#0f172a', color: '#f8fafc', padding: '12px 16px', fontSize: 15 }}
+              className="form-control resetar-senha-input"
               value={novaSenha}
               onChange={e => setNovaSenha(e.target.value)}
               placeholder="••••••••"
@@ -64,12 +63,11 @@ const ResetarSenhaTemporaria: React.FC = () => {
             />
           </div>
           <div className="mb-3">
-            <label htmlFor="confirmarSenha" className="form-label fw-semibold" style={{ color: '#f8fafc', fontSize: 14 }}>Confirmar senha</label>
+            <label htmlFor="confirmarSenha" className="form-label fw-semibold resetar-senha-label">Confirmar senha</label>
             <input
               id="confirmarSenha"
               type="password"
-              className="form-control"
-              style={{ borderRadius: 8, border: '1px solid #475569', background: '#0f172a', color: '#f8fafc', padding: '12px 16px', fontSize: 15 }}
+              className="form-control resetar-senha-input"
               value={confirmarSenha}
               onChange={e => setConfirmarSenha(e.target.value)}
               placeholder="••••••••"
@@ -78,7 +76,7 @@ const ResetarSenhaTemporaria: React.FC = () => {
               autoComplete="new-password"
             />
           </div>
-          <button className="btn w-100 fw-bold" type="submit" disabled={loading} style={{ background: '#f97316', color: '#fff', fontSize: 16, borderRadius: 8, padding: '12px', border: 'none', boxShadow: '0 4px 12px rgba(249, 115, 22, 0.3)', marginTop: 10 }}>
+          <button className="btn w-100 fw-bold resetar-senha-btn" type="submit" disabled={loading}>
             {loading ? <><span className="spinner-border spinner-border-sm me-2"></span>Salvando...</> : <><i className="bi bi-check2-circle me-2"></i>Salvar nova senha</>}
           </button>
         </form>

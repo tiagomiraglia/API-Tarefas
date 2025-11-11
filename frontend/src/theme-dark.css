@@ -1,0 +1,18 @@
+/* Dark Nynch Theme */
+:root {
+  --bg: #181a20;
+  --card: #232634;
+  --accent: #2563eb;
+  --muted: #a1a1aa;
+  --text: #f8fafc;
+  --border: #2d3142;
+}
+body {
+  background: var(--bg);
+  color: var(--text);
+}
+.card {
+  background: var(--card);
+  color: var(--text);
+  border: 1px solid var(--border);
+}

@@ -171,24 +171,23 @@ export default function Registro(): JSX.Element {
   let conteudo: JSX.Element = <div />;
   if (sucesso && !codigoValidado) {
     conteudo = (
-      <div style={{ minHeight: '100vh', minWidth: '100vw', width: '100vw', background: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, fontFamily: 'Inter, sans-serif' }}>
+      <div className="registro-bg">
         <div style={{maxWidth: 420, width: '100%'}}>
-          <div className="shadow-lg mb-4" style={{ borderRadius: 16, background: '#1e293b', padding: '32px', boxShadow: '0 8px 32px rgba(0,0,0,0.3)', border: '1px solid #334155', textAlign: 'center' }}>
-            <div className="rounded-3 p-3 mb-3 d-inline-block" style={{background: '#16a34a'}}>
-              <i className="bi bi-envelope-check text-white" style={{ fontSize: 32 }}></i>
+          <div className="shadow-lg mb-4 registro-verificacao-card">
+            <div className="rounded-3 p-3 mb-3 d-inline-block registro-verificacao-icon-bg">
+              <i className="bi bi-envelope-check text-white registro-verificacao-icon"></i>
             </div>
-            <h4 className="mb-3" style={{ color: '#f8fafc', fontWeight: 700 }}>Verifique seu e-mail</h4>
-            <p style={{ color: '#cbd5e1', fontSize: 14 }}>Enviamos um código de confirmação para <b style={{color: '#f97316'}}>{email}</b>.<br />Digite o código recebido para validar seu cadastro.</p>
+            <h4 className="mb-3 registro-verificacao-title">Verifique seu e-mail</h4>
+            <p className="registro-verificacao-desc">Enviamos um código de confirmação para <b className="registro-verificacao-email">{email}</b>.<br />Digite o código recebido para validar seu cadastro.</p>
           </div>
           <form onSubmit={validarCodigo} className="w-100" autoComplete="off">
             <div className="mb-3">
-              <label htmlFor="codigo" className="form-label fw-semibold" style={{ color: '#f8fafc', fontSize: 14 }}>Código de verificação</label>
+              <label htmlFor="codigo" className="form-label fw-semibold registro-label">Código de verificação</label>
               <input
                 id="codigo"
                 name="codigo"
                 type="text"
-                className="form-control"
-                style={{ borderRadius: 8, border: erroCodigo ? '1px solid #dc2626' : '1px solid #475569', background: '#0f172a', color: '#f8fafc', padding: '12px 16px', fontSize: 15 }}
+                className={`form-control registro-input${erroCodigo ? ' registro-input-error' : ''}`}
                 value={codigo}
                 onChange={e => setCodigo(e.target.value)}
                 placeholder="Digite o código de 6 dígitos"
@@ -196,9 +195,9 @@ export default function Registro(): JSX.Element {
                 maxLength={6}
                 autoFocus
               />
-              {erroCodigo && <div style={{ color: '#dc2626', fontSize: 13, marginTop: 4 }}>{erroCodigo}</div>}
+              {erroCodigo && <div className="registro-alert-error">{erroCodigo}</div>}
             </div>
-            <button type="submit" className="btn w-100 fw-bold" style={{ background: '#f97316', color: '#fff', fontSize: 16, borderRadius: 8, padding: '12px', border: 'none', boxShadow: '0 4px 12px rgba(249, 115, 22, 0.3)' }} disabled={carregando}>
+            <button type="submit" className="btn w-100 fw-bold registro-btn" disabled={carregando}>
               {carregando ? <span className="spinner-border spinner-border-sm me-2"></span> : <i className="bi bi-shield-check me-2"></i>}
               Validar código
             </button>
@@ -209,14 +208,14 @@ export default function Registro(): JSX.Element {
   } else if (sucesso && codigoValidado) {
     if (finalizado) {
       conteudo = (
-        <div style={{ minHeight: '100vh', minWidth: '100vw', width: '100vw', background: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, fontFamily: 'Inter, sans-serif' }}>
-          <div className="shadow-lg text-center" style={{ maxWidth: 420, borderRadius: 16, background: '#1e293b', padding: '48px 32px', boxShadow: '0 8px 32px rgba(0,0,0,0.3)', border: '1px solid #334155' }}>
-            <div className="rounded-3 p-3 mb-3 d-inline-block" style={{background: '#16a34a'}}>
-              <i className="bi bi-check-circle text-white" style={{ fontSize: 48 }}></i>
+        <div className="registro-bg">
+          <div className="shadow-lg text-center registro-success-card">
+            <div className="rounded-3 p-3 mb-3 d-inline-block registro-success-icon-bg">
+              <i className="bi bi-check-circle text-white registro-success-icon"></i>
             </div>
-            <h4 className="mb-3" style={{ color: '#f8fafc', fontWeight: 700, fontSize: 24 }}>Cadastro concluído!</h4>
-            <p style={{ color: '#cbd5e1', fontSize: 14, marginBottom: 32 }}>Sua empresa foi cadastrada com sucesso.<br />Agora é só acessar o sistema.</p>
-            <a href="/login" className="btn fw-bold" style={{ background: '#f97316', color: '#fff', fontSize: 16, borderRadius: 8, padding: '12px 24px', border: 'none', boxShadow: '0 4px 12px rgba(249, 115, 22, 0.3)', textDecoration: 'none', display: 'inline-block' }}>
+            <h4 className="mb-3 registro-success-title">Cadastro concluído!</h4>
+            <p className="registro-success-desc">Sua empresa foi cadastrada com sucesso.<br />Agora é só acessar o sistema.</p>
+            <a href="/login" className="btn fw-bold registro-btn registro-success-link">
               <i className="bi bi-box-arrow-in-right me-2"></i>Ir para o login
             </a>
           </div>
@@ -224,23 +223,22 @@ export default function Registro(): JSX.Element {
       );
     } else {
       conteudo = (
-        <div style={{ minHeight: '100vh', minWidth: '100vw', width: '100vw', background: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, fontFamily: 'Inter, sans-serif' }}>
-          <div className="shadow-lg" style={{maxWidth: 420, width: '100%', borderRadius: 16, background: '#1e293b', padding: '40px 32px', boxShadow: '0 8px 32px rgba(0,0,0,0.3)', border: '1px solid #334155'}}>
+        <div className="registro-bg">
+          <div className="shadow-lg registro-card">
             <div className="d-flex flex-column align-items-center mb-4">
-              <div className="rounded-3 p-3 mb-3" style={{background: '#f97316'}}>
-                <i className="bi bi-building text-white" style={{ fontSize: 32 }}></i>
+              <div className="rounded-3 p-3 mb-3 registro-card-icon-bg">
+                <i className="bi bi-building text-white registro-card-icon"></i>
               </div>
-              <h2 className="fw-bold mb-2 text-center" style={{ color: '#f8fafc', letterSpacing: -0.5, fontSize: 28 }}>Dados da empresa</h2>
+              <h2 className="fw-bold mb-2 text-center registro-title">Dados da empresa</h2>
             </div>
             <form onSubmit={aoSubmeterEmpresa} noValidate>
               <div className="mb-3">
-                <label htmlFor="nomeEmpresa" className="form-label fw-semibold" style={{ color: '#f8fafc', fontSize: 14 }}>Nome da empresa</label>
+                <label htmlFor="nomeEmpresa" className="form-label fw-semibold registro-label">Nome da empresa</label>
                 <input
                   id="nomeEmpresa"
                   name="nomeEmpresa"
                   type="text"
-                  className="form-control"
-                  style={{ borderRadius: 8, border: '1px solid #475569', background: '#0f172a', color: '#f8fafc', padding: '12px 16px', fontSize: 15 }}
+                  className="form-control registro-input"
                   value={nomeEmpresa}
                   onChange={e => setNomeEmpresa(e.target.value)}
                   placeholder="Ex: Nynch Tecnologia"
@@ -248,13 +246,12 @@ export default function Registro(): JSX.Element {
                 />
               </div>
               <div className="mb-3">
-                <label htmlFor="cnpj" className="form-label fw-semibold" style={{ color: '#f8fafc', fontSize: 14 }}>CNPJ</label>
+                <label htmlFor="cnpj" className="form-label fw-semibold registro-label">CNPJ</label>
                 <input
                   id="cnpj"
                   name="cnpj"
                   type="text"
-                  className="form-control"
-                  style={{ borderRadius: 8, border: '1px solid #475569', background: '#0f172a', color: '#f8fafc', padding: '12px 16px', fontSize: 15 }}
+                  className="form-control registro-input"
                   value={cnpj}
                   onChange={e => setCnpj(mascararCNPJ(e.target.value))}
                   placeholder="00.000.000/0000-00"
@@ -262,16 +259,15 @@ export default function Registro(): JSX.Element {
                   required
                 />
               </div>
-              <hr style={{ borderColor: '#475569', margin: '24px 0' }} />
-              <h5 className="mb-3 text-center" style={{ color: '#cbd5e1', fontSize: 18 }}>Administrador da empresa</h5>
+              <hr className="registro-card-hr" />
+              <h5 className="mb-3 text-center registro-card-subtitle">Administrador da empresa</h5>
               <div className="mb-3">
-                <label htmlFor="nomeAdmin" className="form-label fw-semibold" style={{ color: '#f8fafc', fontSize: 14 }}>Nome do administrador</label>
+                <label htmlFor="nomeAdmin" className="form-label fw-semibold registro-label">Nome do administrador</label>
                 <input
                   id="nomeAdmin"
                   name="nomeAdmin"
                   type="text"
-                  className="form-control"
-                  style={{ borderRadius: 8, border: '1px solid #475569', background: '#0f172a', color: '#f8fafc', padding: '12px 16px', fontSize: 15 }}
+                  className="form-control registro-input"
                   value={nomeAdmin}
                   onChange={e => setNomeAdmin(e.target.value)}
                   placeholder="Nome completo"
@@ -279,13 +275,12 @@ export default function Registro(): JSX.Element {
                 />
               </div>
               <div className="mb-3">
-                <label htmlFor="emailAdmin" className="form-label fw-semibold" style={{ color: '#f8fafc', fontSize: 14 }}>E-mail do administrador</label>
+                <label htmlFor="emailAdmin" className="form-label fw-semibold registro-label">E-mail do administrador</label>
                 <input
                   id="emailAdmin"
                   name="emailAdmin"
                   type="email"
-                  className="form-control"
-                  style={{ borderRadius: 8, border: '1px solid #475569', background: '#0f172a', color: '#f8fafc', padding: '12px 16px', fontSize: 15 }}
+                  className="form-control registro-input"
                   value={emailAdmin}
                   onChange={e => setEmailAdmin(e.target.value)}
                   placeholder="admin@empresa.com"
@@ -293,13 +288,12 @@ export default function Registro(): JSX.Element {
                 />
               </div>
               <div className="mb-3">
-                <label htmlFor="senhaAdmin" className="form-label fw-semibold" style={{ color: '#f8fafc', fontSize: 14 }}>Senha</label>
+                <label htmlFor="senhaAdmin" className="form-label fw-semibold registro-label">Senha</label>
                 <input
                   id="senhaAdmin"
                   name="senhaAdmin"
                   type="password"
-                  className="form-control"
-                  style={{ borderRadius: 8, border: '1px solid #475569', background: '#0f172a', color: '#f8fafc', padding: '12px 16px', fontSize: 15 }}
+                  className="form-control registro-input"
                   value={senhaAdmin}
                   onChange={e => setSenhaAdmin(e.target.value)}
                   placeholder="••••••••"
@@ -307,7 +301,7 @@ export default function Registro(): JSX.Element {
                   minLength={6}
                 />
               </div>
-              <button type="submit" className="btn w-100 fw-bold" style={{ background: '#f97316', color: '#fff', fontSize: 16, borderRadius: 8, padding: '12px', border: 'none', boxShadow: '0 4px 12px rgba(249, 115, 22, 0.3)' }} disabled={carregandoForm}>
+              <button type="submit" className="btn w-100 fw-bold registro-btn" disabled={carregandoForm}>
                 {carregandoForm ? <span className="spinner-border spinner-border-sm me-2"></span> : <i className="bi bi-check2-circle me-2"></i>}
                 Finalizar cadastro
               </button>
@@ -317,25 +311,24 @@ export default function Registro(): JSX.Element {
       );
     }
   } else {
-    conteudo = (
-      <div style={{ minHeight: '100vh', minWidth: '100vw', width: '100vw', background: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 20, fontFamily: 'Inter, sans-serif' }}>
-        <div className="shadow-lg" style={{maxWidth: 420, minWidth: 320, width: '100%', borderRadius: 16, background: '#1e293b', padding: '40px 32px', boxShadow: '0 8px 32px rgba(0,0,0,0.3)', border: '1px solid #334155'}}>
-          <div className="d-flex flex-column align-items-center mb-4">
-            <div className="rounded-3 p-3 mb-3" style={{background: '#f97316'}}>
-              <i className="bi bi-person-plus text-white" style={{ fontSize: 32 }}></i>
+      conteudo = (
+        <div className="registro-bg">
+          <div className="shadow-lg registro-card">
+            <div className="d-flex flex-column align-items-center mb-4">
+              <div className="rounded-3 p-3 mb-3 registro-card-icon-bg">
+                <i className="bi bi-person-plus text-white registro-card-icon"></i>
+              </div>
+              <h2 className="fw-bold mb-2 text-center registro-title">Criar conta</h2>
+              <div className="text-center registro-desc">Cadastre sua empresa na plataforma AWA</div>
             </div>
-            <h2 className="fw-bold mb-2 text-center" style={{ color: '#f8fafc', letterSpacing: -0.5, fontSize: 28 }}>Criar conta</h2>
-            <div className="text-center" style={{ color: '#cbd5e1', fontSize: 14 }}>Cadastre sua empresa na plataforma AWA</div>
-          </div>
           <form onSubmit={aoSubmeter} noValidate>
             <div className="mb-3">
-              <label htmlFor="nomeEmpresa" className="form-label fw-semibold" style={{ color: '#f8fafc', fontSize: 14 }}>Nome da empresa</label>
+              <label htmlFor="nomeEmpresa" className="form-label fw-semibold registro-label">Nome da empresa</label>
               <input
                 id="nomeEmpresa"
                 name="nomeEmpresa"
                 type="text"
-                className="form-control"
-                style={{ borderRadius: 8, border: '1px solid #475569', background: '#0f172a', color: '#f8fafc', padding: '12px 16px', fontSize: 15 }}
+                className="form-control registro-input"
                 value={nomeEmpresa}
                 onChange={e => setNomeEmpresa(e.target.value)}
                 placeholder="Ex: Nynch Tecnologia"
@@ -343,26 +336,25 @@ export default function Registro(): JSX.Element {
               />
             </div>
             <div className="mb-3">
-              <label htmlFor="email" className="form-label fw-semibold" style={{ color: '#f8fafc', fontSize: 14 }}>E-mail</label>
+              <label htmlFor="email" className="form-label fw-semibold registro-label">E-mail</label>
               <input
                 id="email"
                 name="email"
                 type="email"
-                className="form-control"
-                style={{ borderRadius: 8, border: '1px solid #475569', background: '#0f172a', color: '#f8fafc', padding: '12px 16px', fontSize: 15 }}
+                className="form-control registro-input"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 placeholder="seu@email.com"
                 required
               />
             </div>
-            {erro && <div className="alert alert-danger py-2 mb-3 text-center" style={{ borderRadius: 8, fontSize: 14, background: '#dc2626', border: 'none', color: '#fff' }}>{erro}</div>}
-            <button type="submit" className="btn w-100 fw-bold mb-3" style={{ background: '#f97316', color: '#fff', fontSize: 16, borderRadius: 8, padding: '12px', border: 'none', boxShadow: '0 4px 12px rgba(249, 115, 22, 0.3)' }} disabled={carregando}>
+            {erro && <div className="alert alert-danger py-2 mb-3 text-center registro-alert-error">{erro}</div>}
+            <button type="submit" className="btn w-100 fw-bold mb-3 registro-btn" disabled={carregando}>
               {carregando ? <span className="spinner-border spinner-border-sm me-2"></span> : <i className="bi bi-send me-2"></i>}
               Registrar
             </button>
-            <div className="text-center mt-4" style={{ color: '#94a3b8', fontSize: 14 }}>
-              <a href="/login" style={{ color: '#f97316', textDecoration: 'none', fontWeight: 500 }}>Já tem conta? Entrar</a>
+            <div className="text-center mt-4 registro-link-wrap">
+              <a href="/login" className="registro-link">Já tem conta? Entrar</a>
             </div>
           </form>
         </div>
