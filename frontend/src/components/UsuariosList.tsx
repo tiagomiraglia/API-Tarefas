@@ -6,6 +6,8 @@ export interface Usuario {
   email: string;
   empresaNome: string;
   suspenso?: boolean;
+  is_superuser?: boolean;
+  nivel?: string;
 }
 
 interface UsuariosListProps {
@@ -14,9 +16,11 @@ interface UsuariosListProps {
   onSuspend?: (usuario: Usuario) => void;
   onReactivate?: (usuario: Usuario) => void;
   onDelete?: (usuario: Usuario) => void;
+  canModifyUser?: (usuario: Usuario) => boolean;
+  showEmpresaColumn?: boolean;
 }
 
-export default function UsuariosList({ usuarios, onEdit, onSuspend, onReactivate, onDelete }: UsuariosListProps) {
+export default function UsuariosList({ usuarios, onEdit, onSuspend, onReactivate, onDelete, canModifyUser, showEmpresaColumn = true }: UsuariosListProps) {
   const [busca, setBusca] = useState('');
   if (!usuarios || usuarios.length === 0) {
     return <div className="text-center py-4 muted-text">Nenhum usuário encontrado.</div>;
@@ -34,7 +38,7 @@ export default function UsuariosList({ usuarios, onEdit, onSuspend, onReactivate
     );
   }
   return (
-    <div className="table-responsive">
+    <div>
       <div className="mb-3">
         <input
           type="text"
@@ -44,98 +48,115 @@ export default function UsuariosList({ usuarios, onEdit, onSuspend, onReactivate
           onChange={e => setBusca(e.target.value)}
         />
       </div>
-      <table className="table table-bordered table-theme">
-        <thead>
-          <tr>
-            <th className="table-theme-th">Nome</th>
-            <th className="table-theme-th">E-mail</th>
-            <th className="table-theme-th">Empresa</th>
-            <th className="text-center table-theme-th">Ações</th>
-          </tr>
-        </thead>
-        <tbody>
-          {lista.map((usuario) => (
-            <tr key={usuario.id} className="table-theme-tr">
-              <td className="table-theme-td table-theme-td-nome">
-                {usuario.nome}
-                {usuario.suspenso && (
-                  <i
-                    className="bi bi-pause-circle ms-2 icon-muted"
-                    title="Usuário suspenso"
-                  ></i>
+      <div className="table-theme-flex">
+        <div className="table-theme-header">
+          <div className="table-theme-th">Nome</div>
+          <div className="table-theme-th">E-mail</div>
+          {showEmpresaColumn && <div className="table-theme-th">Empresa</div>}
+          <div className="table-theme-th text-center">Ações</div>
+        </div>
+        <div className="table-theme-body">
+          {lista.map((usuario) => {
+            const podeModificar = canModifyUser ? canModifyUser(usuario) : true;
+            return (
+              <div key={usuario.id} className="table-theme-row">
+                <div className="table-theme-td table-theme-td-nome">
+                  {usuario.nome}
+                  {usuario.suspenso && (
+                    <i
+                      className="bi bi-pause-circle ms-2 icon-muted"
+                      title="Usuário suspenso"
+                    ></i>
+                  )}
+                  {usuario.email === superuserEmail && (
+                    <span className="badge ms-2 badge-master" title="Master">
+                      <i className="bi bi-shield-lock-fill me-1"></i>Master
+                    </span>
+                  )}
+                  {usuario.is_superuser && usuario.email !== superuserEmail && (
+                    <span className="badge ms-2 badge-master" title="Superuser">
+                      <i className="bi bi-shield-lock-fill me-1"></i>Superuser
+                    </span>
+                  )}
+                  {usuario.nivel === 'admin' && !usuario.is_superuser && (
+                    <span className="badge ms-2" style={{ background: '#f97316', color: 'white' }} title="Admin">
+                      <i className="bi bi-person-check-fill me-1"></i>Admin
+                    </span>
+                  )}
+                </div>
+                <div className="table-theme-td">
+                  {usuario.email}
+                  {usuario.email === superuserEmail && (
+                    <i className="bi bi-star-fill ms-1 icon-gold" title="Dono do SaaS"></i>
+                  )}
+                </div>
+                {showEmpresaColumn && (
+                  <div className="table-theme-td">
+                    {usuario.email === superuserEmail ? 'SaaS' : usuario.empresaNome}
+                  </div>
                 )}
-                {usuario.email === superuserEmail && (
-                  <span className="badge ms-2 badge-master" title="Master">
-                    <i className="bi bi-shield-lock-fill me-1"></i>Master
-                  </span>
-                )}
-              </td>
-              <td className="table-theme-td">
-                {usuario.email}
-                {usuario.email === superuserEmail && (
-                  <i className="bi bi-star-fill ms-1 icon-gold" title="Dono do SaaS"></i>
-                )}
-              </td>
-              <td className="table-theme-td">
-                {usuario.email === superuserEmail ? '' : usuario.empresaNome}
-              </td>
-              <td className="text-center table-theme-td">
-                <button 
-                  type="button" 
-                  className="btn btn-link btn-action btn-edit" 
-                  title="Editar" 
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onEdit && onEdit(usuario);
-                  }}
-                >
-                  <i className="bi bi-pencil-square icon-action icon-blue"></i>
-                </button>
-                {usuario.suspenso ? (
+                <div className="table-theme-td text-center">
                   <button 
                     type="button" 
-                    className="btn btn-link btn-action btn-reactivate" 
-                    title="Reativar" 
+                    className="btn btn-link btn-action btn-edit" 
+                    title="Editar"
+                    disabled={!podeModificar}
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      onReactivate && onReactivate(usuario);
+                      onEdit && onEdit(usuario);
                     }}
                   >
-                    <i className="bi bi-play-circle icon-action icon-green"></i>
+                    <i className="bi bi-pencil-square icon-action icon-blue"></i>
                   </button>
-                ) : (
+                  {usuario.suspenso ? (
+                    <button 
+                      type="button" 
+                      className="btn btn-link btn-action btn-reactivate" 
+                      title="Reativar"
+                      disabled={!podeModificar}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onReactivate && onReactivate(usuario);
+                      }}
+                    >
+                      <i className="bi bi-play-circle icon-action icon-green"></i>
+                    </button>
+                  ) : (
+                    <button 
+                      type="button" 
+                      className="btn btn-link btn-action btn-suspend" 
+                      title="Suspender"
+                      disabled={!podeModificar}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        onSuspend && onSuspend(usuario);
+                      }}
+                    >
+                      <i className="bi bi-pause-circle icon-action icon-orange"></i>
+                    </button>
+                  )}
                   <button 
                     type="button" 
-                    className="btn btn-link btn-action btn-suspend" 
-                    title="Suspender" 
+                    className="btn btn-link btn-action btn-delete" 
+                    title="Excluir"
+                    disabled={!podeModificar}
                     onClick={(e) => {
                       e.preventDefault();
                       e.stopPropagation();
-                      onSuspend && onSuspend(usuario);
+                      onDelete && onDelete(usuario);
                     }}
                   >
-                    <i className="bi bi-pause-circle icon-action icon-orange"></i>
+                    <i className="bi bi-trash icon-action icon-red"></i>
                   </button>
-                )}
-                <button 
-                  type="button" 
-                  className="btn btn-link btn-action btn-delete" 
-                  title="Excluir" 
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onDelete && onDelete(usuario);
-                  }}
-                >
-                  <i className="bi bi-trash icon-action icon-red"></i>
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
       {lista.length === 0 && (
         <div className="text-center py-4 muted-text table-theme-empty">
           Nenhum usuário encontrado para a busca.

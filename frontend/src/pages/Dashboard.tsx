@@ -1,109 +1,18 @@
 import NavbarAdmin from '../components/NavbarAdmin';
-import { useState, useEffect, useRef } from 'react';
-import { showToast } from '../utils/toast';
+import { useState, useEffect } from 'react';
 import { api } from '../services/api';
-import UsuariosList from '../components/UsuariosList';
-
-interface UsuarioTime {
-  id: number;
-  nome: string;
-  email: string;
-  suspenso?: boolean;
-  empresaNome: string;
-}
 
 export default function Dashboard() {
   const [usuario, setUsuario] = useState<any>(null);
-  const [usuarios, setUsuarios] = useState<UsuarioTime[]>([]);
-  const [loadingUsuarios, setLoadingUsuarios] = useState(false);
-  const [openUserMenu, setOpenUserMenu] = useState(false);
-  const menuRef = useRef<HTMLDivElement>(null);
+  const [usuarios, setUsuarios] = useState<any[]>([]);
+  const [stats, setStats] = useState<any>({
+    mensagensHoje: 0,
+    atendimentosHoje: 0,
+    tempoMedio: '--'
+  });
+  const [loadingStats, setLoadingStats] = useState(true);
 
   useEffect(() => {
-    function handleClick(e: MouseEvent) {
-      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
-        setOpenUserMenu(false);
-      }
-    }
-    if (openUserMenu) document.addEventListener('mousedown', handleClick);
-    return () => document.removeEventListener('mousedown', handleClick);
-  }, [openUserMenu]);
-
-  async function fetchUsuarios() {
-    setLoadingUsuarios(true);
-    try {
-      const res = await api.get('/usuarios');
-      setUsuarios(res.data.users || []);
-    } finally {
-      setLoadingUsuarios(false);
-    }
-  }
-
-  async function handleSuspendUsuario(usuario: UsuarioTime) {
-    if (window.confirm(`Deseja realmente suspender ${usuario.nome}?`)) {
-      try {
-        const token = localStorage.getItem('token');
-        const res = await fetch(`/api/usuarios/${usuario.id}/suspender`, {
-          method: 'PATCH',
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (res.ok) {
-          showToast('Usuário suspenso com sucesso!', 'success');
-          await fetchUsuarios();
-        } else {
-          const err = await res.json();
-          showToast(err.message || 'Erro ao suspender usuário', 'error');
-        }
-      } catch {
-        showToast('Erro de conexão', 'error');
-      }
-    }
-  }
-
-  async function handleReactivateUsuario(usuario: UsuarioTime) {
-    if (window.confirm(`Deseja realmente reativar ${usuario.nome}?`)) {
-      try {
-        const token = localStorage.getItem('token');
-        const res = await fetch(`/api/usuarios/${usuario.id}/reativar`, {
-          method: 'PATCH',
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (res.ok) {
-          showToast('Usuário reativado com sucesso!', 'success');
-          await fetchUsuarios();
-        } else {
-          const err = await res.json();
-          showToast(err.message || 'Erro ao reativar usuário', 'error');
-        }
-      } catch {
-        showToast('Erro de conexão', 'error');
-      }
-    }
-  }
-
-  async function handleDelete(usuario: UsuarioTime) {
-    if (window.confirm(`Excluir ${usuario.nome}? Esta ação é irreversível.`)) {
-      try {
-        const token = localStorage.getItem('token');
-        const res = await fetch(`/api/usuarios/${usuario.id}`, {
-          method: 'DELETE',
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        if (res.ok) {
-          showToast('Usuário excluído', 'success');
-          setUsuarios(us => us.filter(u => u.id !== usuario.id));
-        } else {
-          const err = await res.json();
-          showToast(err.message || 'Erro ao excluir usuário', 'error');
-        }
-      } catch {
-        showToast('Erro de conexão', 'error');
-      }
-    }
-  }
-
-  useEffect(() => {
-    fetchUsuarios();
     // Busca dados do usuário logado via id salvo no localStorage
     async function fetchUsuario() {
       const id = localStorage.getItem('user_id') || localStorage.getItem('id');
@@ -114,7 +23,37 @@ export default function Dashboard() {
       } catch {}
     }
     fetchUsuario();
-    return () => {};
+  }, []);
+
+  useEffect(() => {
+    // Busca usuários da empresa
+    async function fetchUsuarios() {
+      try {
+        const res = await api.get('/usuarios');
+        const data = res.data;
+        // Filtrar apenas usuários ativos (não suspensos)
+        const usuariosAtivos = (data.users || []).filter((u: any) => !u.suspenso);
+        setUsuarios(usuariosAtivos);
+      } catch (error) {
+        console.error('Erro ao buscar usuários:', error);
+      }
+    }
+    fetchUsuarios();
+  }, []);
+
+  useEffect(() => {
+    // Busca estatísticas do dashboard
+    async function fetchStats() {
+      try {
+        const res = await api.get('/dashboard/stats');
+        setStats(res.data);
+      } catch (error) {
+        console.error('Erro ao buscar estatísticas:', error);
+      } finally {
+        setLoadingStats(false);
+      }
+    }
+    fetchStats();
   }, []);
 
   return (
@@ -125,7 +64,6 @@ export default function Dashboard() {
           {/* Header */}
           <div className="dashboard-header mb-5">
             <h1 className="dashboard-title fw-bold mb-2">Dashboard Administrativo</h1>
-            <p className="dashboard-desc">Visão geral e gerenciamento do sistema</p>
           </div>
           {/* Stats Grid */}
           <div className="row g-4 mb-5">
@@ -156,9 +94,15 @@ export default function Dashboard() {
                     <i className="bi bi-chat-dots dashboard-card-icon"></i>
                   </div>
                 </div>
-                <div className="dashboard-card-value h1 fw-bold mb-2">--</div>
+                <div className="dashboard-card-value h1 fw-bold mb-2">
+                  {loadingStats ? '...' : stats.mensagensHoje}
+                </div>
                 <div className="dashboard-card-info">
-                  <span className="dashboard-card-badge dashboard-card-badge-info">Em breve</span>
+                  <span className="dashboard-card-badge">
+                    <i className="bi bi-chat-text dashboard-card-badge-icon"></i>
+                    {loadingStats ? '...' : 'hoje'}
+                  </span>
+                  <span className="dashboard-card-info-text">Mensagens recebidas</span>
                 </div>
               </div>
             </div>
@@ -166,14 +110,20 @@ export default function Dashboard() {
             <div className="col-lg-3 col-md-6">
               <div className="dashboard-card dashboard-card-green">
                 <div className="d-flex align-items-center justify-content-between mb-3">
-                  <div className="dashboard-card-label">Atendimentos</div>
+                  <div className="dashboard-card-label">Atendimentos Hoje</div>
                   <div className="dashboard-card-icon-bg">
                     <i className="bi bi-headset dashboard-card-icon"></i>
                   </div>
                 </div>
-                <div className="dashboard-card-value h1 fw-bold mb-2">--</div>
+                <div className="dashboard-card-value h1 fw-bold mb-2">
+                  {loadingStats ? '...' : stats.atendimentosHoje}
+                </div>
                 <div className="dashboard-card-info">
-                  <span className="dashboard-card-badge dashboard-card-badge-info">Em breve</span>
+                  <span className="dashboard-card-badge">
+                    <i className="bi bi-plus-circle dashboard-card-badge-icon"></i>
+                    {loadingStats ? '...' : 'novos'}
+                  </span>
+                  <span className="dashboard-card-info-text">Atendimentos criados</span>
                 </div>
               </div>
             </div>
@@ -186,33 +136,18 @@ export default function Dashboard() {
                     <i className="bi bi-clock-history dashboard-card-icon"></i>
                   </div>
                 </div>
-                <div className="dashboard-card-value h1 fw-bold mb-2">--</div>
+                <div className="dashboard-card-value h1 fw-bold mb-2">
+                  {loadingStats ? '...' : stats.tempoMedio}
+                </div>
                 <div className="dashboard-card-info">
-                  <span className="dashboard-card-badge dashboard-card-badge-info">Em breve</span>
+                  <span className="dashboard-card-badge">
+                    <i className="bi bi-clock dashboard-card-badge-icon"></i>
+                    {loadingStats ? '...' : 'médio'}
+                  </span>
+                  <span className="dashboard-card-info-text">Tempo de atendimento</span>
                 </div>
               </div>
             </div>
-          </div>
-          {/* Users Table */}
-          <div className="dashboard-users-table">
-            <div className="d-flex align-items-center justify-content-between mb-4">
-              <div>
-                <h5 className="dashboard-users-title fw-bold mb-1">
-                  <i className="bi bi-people me-2 dashboard-users-title-icon"></i>
-                  Gerenciar Usuários
-                </h5>
-                <p className="dashboard-users-desc">
-                  Adicione e gerencie os usuários da sua equipe
-                </p>
-              </div>
-            </div>
-            <UsuariosList 
-              usuarios={usuarios}
-              onSuspend={handleSuspendUsuario}
-              onReactivate={handleReactivateUsuario}
-              onDelete={handleDelete} 
-            />
-            {loadingUsuarios && <div className="dashboard-users-loading text-center mt-3">Carregando usuários...</div>}
           </div>
         </div>
       </div>

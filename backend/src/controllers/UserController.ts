@@ -215,6 +215,7 @@ export class UserController {
           empresa_id: empresaId,
           permissoes: permissoes || {},
           is_superuser: false, // sempre false para cadastro de time
+          nivel: 'usuario', // sempre 'usuario' para membros do time
           temp_password: tempPasswordHash,
           temp_password_expires_at: tempPasswordExpiresAt,
           needs_password_reset: true,
@@ -311,11 +312,31 @@ export class UserController {
   async suspendUser(req: Request, res: Response): Promise<void> {
     try {
       const { id } = req.params;
-  const result = await pool.query('UPDATE "Usuario" SET suspenso = true WHERE id = $1 RETURNING id, nome, email, suspenso', [id]);
-      if (result.rowCount === 0) {
+      // Verifica se o usuário é superuser
+      const userResult = await pool.query('SELECT is_superuser, nivel, empresa_id FROM "Usuario" WHERE id = $1', [id]);
+      if (userResult.rowCount === 0) {
         res.status(404).json({ message: 'Usuário não encontrado' });
         return;
       }
+      const userToSuspend = userResult.rows[0];
+      
+      if (userToSuspend.is_superuser) {
+        res.status(403).json({ message: 'Não é permitido suspender um superuser!' });
+        return;
+      }
+      
+      // Se for um admin de empresa, verifica se é o último admin
+      if (userToSuspend.nivel === 'admin') {
+        const empresaId = userToSuspend.empresa_id;
+        const adminsResult = await pool.query('SELECT COUNT(*) FROM "Usuario" WHERE empresa_id = $1 AND nivel = $2 AND suspenso = false', [empresaId, 'admin']);
+        const activeAdminsCount = parseInt((adminsResult.rows[0] && adminsResult.rows[0].count) || '0', 10);
+        if (activeAdminsCount <= 1) {
+          res.status(403).json({ message: 'Não é permitido suspender o último admin ativo desta empresa.' });
+          return;
+        }
+      }
+
+      const result = await pool.query('UPDATE "Usuario" SET suspenso = true WHERE id = $1 RETURNING id, nome, email, suspenso', [id]);
       res.json({
         message: 'Usuário suspenso com sucesso!',
         user: result.rows[0]
