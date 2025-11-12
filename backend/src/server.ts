@@ -1,64 +1,66 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
-import fs from 'fs';
 import http from 'http';
-import { Server as SocketIOServer } from 'socket.io';
 
 import { authRoutes } from './routes/auth';
 import { empresaAdminRoutes } from './routes/empresaAdmin';
 import { usuariosRoutes } from './routes/usuarios';
 import { empresasRoutes } from './routes/empresas';
 import { rootRoutes } from './routes/root';
-import avisosRoutes from './routes/avisos';
-import avisoVisualizacaoRoutes from './routes/avisoVisualizacao';
-import whatsappBaileysRoutes from './modules/whatsapp/routes/whatsappBaileys';
+import { dashboardRoutes } from './routes/dashboard';
+// import avisosRoutes from './routes/avisos';
+// import avisoVisualizacaoRoutes from './routes/avisoVisualizacao';
 import kanbanRoutes from './routes/kanban';
-import permissoesKanbanRoutes from './routes/permissoesKanban';
-import whatsappKanbanRoutes from './routes/whatsappKanban';
-import transferenciasRoutes from './routes/transferencias';
-import tagsRoutes from './routes/tags';
-import empresaConfigRoutes from './routes/empresaConfig';
-import { initializeNotifications } from './services/notificationService';
+// import permissoesKanbanRoutes from './routes/permissoesKanban';
+// import whatsappKanbanRoutes from './routes/whatsappKanban';
+// import transferenciasRoutes from './routes/transferencias';
+// import tagsRoutes from './routes/tags';
+// import empresaConfigRoutes from './routes/empresaConfig';
 
 // Carrega variáveis de ambiente padrão
 dotenv.config();
 
+console.log('1. Carregando dotenv...');
+
 const app = express();
 
 const server = http.createServer(app);
-// // Inicializar sistema de notificações
-// const io = initializeNotifications(server);
-const PORT = process.env.PORT || 4000;
 
 // Middleware
 app.use(cors({
-  origin: '*', // Permite todas as origens temporariamente para debug
+  origin: '*',
   credentials: true
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Rotas
+console.log('2. Middleware configurado...');
+
+// Rotas básicas
 app.get('/api', (req, res) => {
-  res.json({ 
+  console.log('3. Rota /api chamada');
+  res.json({
     message: 'API do Projeto está funcionando!',
     version: '1.0.0',
     timestamp: new Date().toISOString()
   });
 });
 
-// Health check endpoint para Coolify
 app.get('/health', (req, res) => {
+  console.log('4. Rota /health chamada');
   res.status(200).json({ status: 'ok' });
 });
 
+// Apenas rota de auth por enquanto
+console.log('5. Configurando rota auth...');
 app.use('/api/auth', authRoutes);
-// app.use('/api/auth', empresaAdminRoutes);
-// app.use('/api/usuarios', usuariosRoutes);
-// app.use('/api/empresas', empresasRoutes);
-// app.use('/api/root', rootRoutes);
-// app.use('/api/whatsapp', whatsappBaileysRoutes);
+app.use('/api/auth', empresaAdminRoutes);
+app.use('/api/usuarios', usuariosRoutes);
+app.use('/api/empresas', empresasRoutes);
+app.use('/api/root', rootRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/kanban', kanbanRoutes);
 // app.use('/api/avisos', avisosRoutes);
 // app.use('/api/avisos/visualizacao', avisoVisualizacaoRoutes);
 // app.use('/api/kanban', kanbanRoutes);
@@ -70,8 +72,8 @@ app.use('/api/auth', authRoutes);
 
 // Middleware de tratamento de erro
 app.use((err: Error, req: express.Request, res: express.Response, next: express.NextFunction) => {
-  console.error(err.stack);
-  res.status(500).json({ 
+  console.error('Erro:', err.stack);
+  res.status(500).json({
     message: 'Algo deu errado!',
     error: process.env.NODE_ENV === 'development' ? err.message : 'Internal Server Error'
   });
@@ -82,15 +84,15 @@ app.use('*', (req, res) => {
   res.status(404).json({ message: 'Rota não encontrada' });
 });
 
+const PORT = process.env.PORT || 4000;
+
+console.log('6. Tentando iniciar servidor na porta', PORT);
+
 server.listen(PORT, () => {
   console.log(`🚀 Servidor rodando na porta ${PORT}`);
   console.log(`📡 API disponível em: http://localhost:${PORT}/api`);
-  console.log(`🔔 Sistema de notificações ativado`);
 });
 
-// Exemplo: emitir evento de visualização (para integração futura)
-// export function emitMessageSeen(data: any) {
-//   if (io) {
-//     io.emit('message-seen', data);
-//   }
-// }
+server.on('error', (err) => {
+  console.error('Erro no servidor:', err);
+});

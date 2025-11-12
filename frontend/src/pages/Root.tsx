@@ -9,10 +9,12 @@ import PerfilModal from '../components/PerfilModal';
 import ModalEditarUsuario from '../components/ModalEditarUsuario';
 import { showToast } from '../utils/toast';
 import { api } from '../services/api';
+import { useConfirmModal } from '../components/ConfirmModal';
 
 export default function Root() {
   const navigate = useNavigate();
   const { theme, toggleTheme } = useTheme();
+  const { showConfirm } = useConfirmModal();
   
   // Estados
   const [rootData, setRootData] = useState<any>(null);
@@ -50,45 +52,69 @@ export default function Root() {
   }
 
   async function handleSuspendEmpresa(empresa: any) {
-    if (!window.confirm(`Suspender a empresa ${empresa.nome}?`)) return;
-    try {
-      await api.patch(`/empresas/${empresa.id}/suspender`);
-      setEmpresas((es: any[]) => es.map((e: any) => e.id === empresa.id ? { ...e, status: 'suspenso' } : e));
-      showToast('Empresa suspensa com sucesso!', 'success');
-    } catch {
-      showToast('Erro ao suspender empresa.', 'error');
+    const confirmed = await showConfirm(
+      `Suspender a empresa ${empresa.nome}?`,
+      'Confirmar Suspensão'
+    );
+    
+    if (confirmed) {
+      try {
+        await api.patch(`/empresas/${empresa.id}/suspender`);
+        setEmpresas((es: any[]) => es.map((e: any) => e.id === empresa.id ? { ...e, status: 'suspenso' } : e));
+        showToast('Empresa suspensa com sucesso!', 'success');
+      } catch {
+        showToast('Erro ao suspender empresa.', 'error');
+      }
     }
   }
 
   async function handleReactivateEmpresa(empresa: any) {
-    if (!window.confirm(`Reativar a empresa ${empresa.nome}?`)) return;
-    try {
-      await api.patch(`/empresas/${empresa.id}/reativar`);
-      setEmpresas((es: any[]) => es.map((e: any) => e.id === empresa.id ? { ...e, status: 'ativo' } : e));
-      showToast('Empresa reativada com sucesso!', 'success');
-    } catch {
-      showToast('Erro ao reativar empresa.', 'error');
+    const confirmed = await showConfirm(
+      `Reativar a empresa ${empresa.nome}?`,
+      'Confirmar Reativação'
+    );
+    
+    if (confirmed) {
+      try {
+        await api.patch(`/empresas/${empresa.id}/reativar`);
+        setEmpresas((es: any[]) => es.map((e: any) => e.id === empresa.id ? { ...e, status: 'ativo' } : e));
+        showToast('Empresa reativada com sucesso!', 'success');
+      } catch {
+        showToast('Erro ao reativar empresa.', 'error');
+      }
     }
   }
 
   async function handleDeleteEmpresa(empresa: any) {
-    if (!window.confirm(`Tem certeza que deseja excluir a empresa ${empresa.nome}?`)) return;
-    try {
-      await api.delete(`/empresas/${empresa.id}`);
-      setEmpresas((es: any[]) => es.filter((e: any) => e.id !== empresa.id));
-      showToast('Empresa excluída com sucesso!', 'success');
-    } catch {
-      showToast('Erro ao excluir empresa.', 'error');
+    const confirmed = await showConfirm(
+      `Tem certeza que deseja excluir a empresa ${empresa.nome}?`,
+      'Confirmar Exclusão'
+    );
+    
+    if (confirmed) {
+      try {
+        await api.delete(`/empresas/${empresa.id}`);
+        setEmpresas((es: any[]) => es.filter((e: any) => e.id !== empresa.id));
+        showToast('Empresa excluída com sucesso!', 'success');
+      } catch {
+        showToast('Erro ao excluir empresa.', 'error');
+      }
     }
   }
   async function handleReactivateUsuario(usuario: any) {
-    if (!window.confirm(`Reativar o usuário ${usuario.nome}?`)) return;
-    try {
-      await api.patch(`/usuarios/${usuario.id}/reativar`);
-      showToast('Usuário reativado com sucesso!', 'success');
-      await fetchUsuarios();
-    } catch {
-      showToast('Erro ao reativar usuário.', 'error');
+    const confirmed = await showConfirm(
+      `Reativar o usuário ${usuario.nome}?`,
+      'Confirmar Reativação'
+    );
+    
+    if (confirmed) {
+      try {
+        await api.patch(`/usuarios/${usuario.id}/reativar`);
+        showToast('Usuário reativado com sucesso!', 'success');
+        await fetchUsuarios();
+      } catch {
+        showToast('Erro ao reativar usuário.', 'error');
+      }
     }
   }
   // Handlers de ação para usuários
@@ -110,24 +136,36 @@ export default function Root() {
   }
 
   async function handleSuspendUsuario(usuario: any) {
-    if (!window.confirm(`Suspender o usuário ${usuario.nome}?`)) return;
-    try {
-      await api.patch(`/usuarios/${usuario.id}/suspender`);
-      showToast('Usuário suspenso com sucesso!', 'success');
-      await fetchUsuarios();
-    } catch {
-      showToast('Erro ao suspender usuário.', 'error');
+    const confirmed = await showConfirm(
+      `Suspender o usuário ${usuario.nome}?`,
+      'Confirmar Suspensão'
+    );
+    
+    if (confirmed) {
+      try {
+        await api.patch(`/usuarios/${usuario.id}/suspender`);
+        showToast('Usuário suspenso com sucesso!', 'success');
+        await fetchUsuarios();
+      } catch {
+        showToast('Erro ao suspender usuário.', 'error');
+      }
     }
   }
 
   async function handleDeleteUsuario(usuario: any) {
-    if (!window.confirm(`Tem certeza que deseja excluir o usuário ${usuario.nome}?`)) return;
-    try {
-      await api.delete(`/usuarios/${usuario.id}`);
-      showToast('Usuário excluído com sucesso!', 'success');
-      await fetchUsuarios();
-    } catch {
-      showToast('Erro ao excluir usuário.', 'error');
+    const confirmed = await showConfirm(
+      `Tem certeza que deseja excluir o usuário ${usuario.nome}?`,
+      'Confirmar Exclusão'
+    );
+    
+    if (confirmed) {
+      try {
+        await api.delete(`/usuarios/${usuario.id}`);
+        showToast('Usuário excluído com sucesso!', 'success');
+        await fetchUsuarios();
+      } catch {
+        showToast('Erro ao excluir usuário.', 'error');
+      }
     }
   }
 

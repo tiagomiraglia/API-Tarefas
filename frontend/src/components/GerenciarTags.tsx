@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { showToast } from '../utils/toast';
+import { useConfirmModal } from './ConfirmModal';
 
 interface Tag {
   id: number;
@@ -33,6 +34,8 @@ export default function GerenciarTags() {
   const [cor, setCor] = useState('#6366f1');
   const [icone, setIcone] = useState('tag');
   const [ordem, setOrdem] = useState(0);
+
+  const { showConfirm } = useConfirmModal();
 
   const ICONES_DISPONIVEIS = [
     { id: 'tag', nome: 'Tag', icon: 'bi-tag' },
@@ -187,22 +190,27 @@ export default function GerenciarTags() {
   }
 
   async function excluirTag(id: number) {
-    if (!confirm('Deseja realmente desativar esta tag?')) return;
+    const confirmed = await showConfirm(
+      'Deseja realmente desativar esta tag?',
+      'Confirmar Desativação'
+    );
+    
+    if (confirmed) {
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch(`${baseURL}/api/tags/${id}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` }
+        });
 
-    try {
-      const token = localStorage.getItem('token');
-      const res = await fetch(`${baseURL}/api/tags/${id}`, {
-        method: 'DELETE',
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      if (res.ok) {
-        showToast('Tag desativada!', 'success');
-        carregarTags();
+        if (res.ok) {
+          showToast('Tag desativada!', 'success');
+          carregarTags();
+        }
+      } catch (error) {
+        console.error('Erro ao excluir tag:', error);
+        showToast('Erro ao excluir tag', 'error');
       }
-    } catch (error) {
-      console.error('Erro ao excluir tag:', error);
-      showToast('Erro ao excluir tag', 'error');
     }
   }
 
