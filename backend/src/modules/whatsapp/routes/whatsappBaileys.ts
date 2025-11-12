@@ -16,12 +16,15 @@
  */
 
 import { Router, Request, Response } from 'express';
-import * as baileysService from '../services/baileysService.js';
+import * as baileysService from '../services/baileysService';
 import { authenticateJWT } from '../../../middleware/auth';
 import { PrismaClient } from '@prisma/client';
 
 const router = Router();
 const prisma = new PrismaClient();
+
+// Aplicar middleware de autenticação a todas as rotas
+router.use(authenticateJWT);
 
 // Middleware para obter empresa_id do usuário autenticado
 async function getEmpresaId(req: Request): Promise<number | null> {
@@ -45,49 +48,23 @@ async function getEmpresaId(req: Request): Promise<number | null> {
  * Criar nova sessão WhatsApp
  * Body: { telefone?: string } - telefone é opcional, será detectado ao conectar
  */
-router.post('/sessions', authenticateJWT, async (req: Request, res: Response) => {
+router.post('/sessions', async (req: Request, res: Response) => {
   try {
     const empresaId = await getEmpresaId(req);
     if (!empresaId) {
       return res.status(403).json({ error: 'Empresa não identificada' });
     }
-
-    // ✅ Verificar se já existe uma sessão ativa
-    const existingSessions = baileysService.listEmpresaSessions(empresaId);
-    const activeSession = existingSessions.find((s: { sessionId: string; telefone: string; status: string; hasQR: boolean }) => 
-      s.status === 'connecting' || s.status === 'connected' || s.status === 'qr'
-    );
-
-    if (activeSession) {
-      console.log(`⚠️ Já existe sessão ativa: ${activeSession.sessionId}`);
-      return res.status(400).json({ 
-        error: 'Já existe uma conexão ativa. Desconecte antes de criar uma nova.',
-        existingSession: activeSession
-      });
-    }
-
     const { telefone } = req.body;
-    
-    console.log(`🚀 Criando nova sessão para empresa ${empresaId}`);
-    
-    // Telefone agora é opcional - será detectado ao escanear QR Code
     const result = await baileysService.startSession(empresaId, telefone);
-
-    console.log(`✅ Sessão criada com sucesso: ${result.sessionId}`);
-
-    // TODO: Salvar no banco após conectar (quando tiver o número real)
-    // Por enquanto mantemos apenas em memória
-
     res.json({
       success: true,
-      message: telefone ? 'Sessão criada com sucesso' : 'QR Code gerado. Escaneie para conectar.',
+      message: 'Sessão criada com sucesso',
       sessionId: result.sessionId,
       status: result.status,
       qr: result.qr
     });
   } catch (error: any) {
     console.error('❌ Erro ao criar sessão:', error);
-    console.error('Stack trace:', error.stack);
     res.status(500).json({ error: error.message || 'Erro ao criar sessão' });
   }
 });
@@ -96,24 +73,16 @@ router.post('/sessions', authenticateJWT, async (req: Request, res: Response) =>
  * GET /api/whatsapp/sessions
  * Listar sessões da empresa
  */
-router.get('/sessions', authenticateJWT, async (req: Request, res: Response) => {
+router.get('/sessions', async (req: Request, res: Response) => {
   try {
     const empresaId = await getEmpresaId(req);
     if (!empresaId) {
       return res.status(403).json({ error: 'Empresa não identificada' });
     }
-
-    console.log(`📋 Listando sessões para empresa ${empresaId}`);
     const sessions = baileysService.listEmpresaSessions(empresaId);
-    console.log(`📋 Encontradas ${sessions.length} sessões`);
-
-    // TODO: Buscar informações do banco quando implementar persistência
-    // Por enquanto retorna apenas sessões em memória
-
     res.json({ sessions });
   } catch (error: any) {
     console.error('❌ Erro ao listar sessões:', error);
-    console.error('Stack trace:', error.stack);
     res.status(500).json({ error: error.message || 'Erro ao listar sessões' });
   }
 });
@@ -122,39 +91,16 @@ router.get('/sessions', authenticateJWT, async (req: Request, res: Response) => 
  * GET /api/whatsapp/sessions/:sessionId/qr
  * Obter QR Code de uma sessão
  */
-router.get('/sessions/:sessionId/qr', authenticateJWT, async (req: Request, res: Response) => {
+router.get('/sessions/:sessionId/qr', async (req: Request, res: Response) => {
   try {
     const { sessionId } = req.params;
     const empresaId = await getEmpresaId(req);
-
-    // Verificar se a sessão pertence à empresa
     const parsed = baileysService.parseSessionId(sessionId);
     if (!parsed || parsed.empresaId !== empresaId) {
       return res.status(403).json({ error: 'Acesso negado' });
     }
-
-    // Verificar se sessão existe com ID antigo
-    let qr = baileysService.getSessionQR(sessionId);
-    let status = baileysService.getSessionStatus(sessionId);
-
-    // Se não encontrou, pode ser que o sessionId tenha mudado após conexão
-    // Buscar por todas as sessões da empresa
-    if (!status || status === 'disconnected') {
-      const empresaSessions = baileysService.listEmpresaSessions(empresaId);
-      
-      // Se encontrar uma sessão conectada, usar ela
-      const connectedSession = empresaSessions.find((s: { sessionId: string; telefone: string; status: string; hasQR: boolean }) => s.status === 'connected');
-      if (connectedSession) {
-        console.log(`🔄 SessionId mudou de ${sessionId} para ${connectedSession.sessionId}`);
-        return res.json({ 
-          qr: null, 
-          status: 'connected',
-          sessionId: connectedSession.sessionId, // Retornar novo ID
-          telefone: connectedSession.telefone
-        });
-      }
-    }
-
+    const qr = baileysService.getSessionQR(sessionId);
+    const status = baileysService.getSessionStatus(sessionId);
     res.json({ qr, status, sessionId });
   } catch (error: any) {
     console.error('Erro ao obter QR:', error);
@@ -166,21 +112,17 @@ router.get('/sessions/:sessionId/qr', authenticateJWT, async (req: Request, res:
  * GET /api/whatsapp/sessions/:sessionId/status
  * Obter status de uma sessão
  */
-router.get('/sessions/:sessionId/status', authenticateJWT, async (req: Request, res: Response) => {
+router.get('/sessions/:sessionId/status', async (req: Request, res: Response) => {
   try {
     const { sessionId } = req.params;
     const empresaId = await getEmpresaId(req);
-
-    // Verificar se a sessão pertence à empresa
     const parsed = baileysService.parseSessionId(sessionId);
     if (!parsed || parsed.empresaId !== empresaId) {
       return res.status(403).json({ error: 'Acesso negado' });
     }
-
     const status = baileysService.getSessionStatus(sessionId);
-    const hasQR = !!baileysService.getSessionQR(sessionId);
-
-    res.json({ sessionId, status, hasQR });
+    const qr = baileysService.getSessionQR(sessionId);
+    res.json({ sessionId, status, hasQR: !!qr });
   } catch (error: any) {
     console.error('Erro ao obter status:', error);
     res.status(500).json({ error: error.message || 'Erro ao obter status' });
@@ -191,21 +133,15 @@ router.get('/sessions/:sessionId/status', authenticateJWT, async (req: Request, 
  * DELETE /api/whatsapp/sessions/:sessionId
  * Desconectar/excluir sessão
  */
-router.delete('/sessions/:sessionId', authenticateJWT, async (req: Request, res: Response) => {
+router.delete('/sessions/:sessionId', async (req: Request, res: Response) => {
   try {
     const { sessionId } = req.params;
     const empresaId = await getEmpresaId(req);
-
-    // Verificar se a sessão pertence à empresa
     const parsed = baileysService.parseSessionId(sessionId);
     if (!parsed || parsed.empresaId !== empresaId) {
       return res.status(403).json({ error: 'Acesso negado' });
     }
-
     const success = await baileysService.disconnectSession(sessionId);
-
-    // TODO: Remover do banco quando implementar persistência
-
     res.json({ success, message: 'Sessão desconectada' });
   } catch (error: any) {
     console.error('Erro ao desconectar sessão:', error);
@@ -217,24 +153,19 @@ router.delete('/sessions/:sessionId', authenticateJWT, async (req: Request, res:
  * POST /api/whatsapp/sessions/:sessionId/send
  * Enviar mensagem
  */
-router.post('/sessions/:sessionId/send', authenticateJWT, async (req: Request, res: Response) => {
+router.post('/sessions/:sessionId/send', async (req: Request, res: Response) => {
   try {
     const { sessionId } = req.params;
     const { to, message } = req.body;
     const empresaId = await getEmpresaId(req);
-
-    // Verificar se a sessão pertence à empresa
     const parsed = baileysService.parseSessionId(sessionId);
     if (!parsed || parsed.empresaId !== empresaId) {
       return res.status(403).json({ error: 'Acesso negado' });
     }
-
     if (!to || !message) {
       return res.status(400).json({ error: 'Campos "to" e "message" são obrigatórios' });
     }
-
     const result = await baileysService.sendMessage(sessionId, to, message);
-
     res.json({ success: true, result });
   } catch (error: any) {
     console.error('Erro ao enviar mensagem:', error);
@@ -246,15 +177,13 @@ router.post('/sessions/:sessionId/send', authenticateJWT, async (req: Request, r
  * DELETE /api/whatsapp/sessions/all
  * Desconectar todas as sessões da empresa
  */
-router.delete('/sessions/all', authenticateJWT, async (req: Request, res: Response) => {
+router.delete('/sessions/all', async (req: Request, res: Response) => {
   try {
     const empresaId = await getEmpresaId(req);
     if (!empresaId) {
       return res.status(403).json({ error: 'Empresa não identificada' });
     }
-
     const disconnected = await baileysService.disconnectAllEmpresaSessions(empresaId);
-
     res.json({ success: true, disconnected, message: `${disconnected} sessões desconectadas` });
   } catch (error: any) {
     console.error('Erro ao desconectar todas as sessões:', error);
