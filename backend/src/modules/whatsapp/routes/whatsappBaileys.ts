@@ -1,28 +1,22 @@
-/**
- * Rotas para gerenciamento de conexões WhatsApp usando Baileys
- * 
- * IMPORTANTE: 
- * - Cada empresa pode ter APENAS 1 número WhatsApp conectado por vez
- * - O Baileys está integrado ao backend (não é servidor separado)
- * - Sessões são isoladas por empresa (multi-tenant seguro)
- * - Conformidade total com políticas Meta/WhatsApp
- * 
- * Endpoints:
- * - POST /api/whatsapp/sessions - Criar nova sessão (1 por empresa)
- * - GET /api/whatsapp/sessions - Listar sessão da empresa
- * - GET /api/whatsapp/sessions/:id/qr - Obter QR Code
- * - DELETE /api/whatsapp/sessions/:id - Desconectar sessão
- * - DELETE /api/whatsapp/sessions/all - Limpar todas as sessões da empresa
- */
-
 import { Router, Request, Response } from 'express';
-import * as baileysService from '../services/baileysService';
+import * as whatsappService from '../services/whatsappWebJsService';
 import { authenticateJWT } from '../../../middleware/auth';
 import { PrismaClient } from '@prisma/client';
 
 const router = Router();
 const prisma = new PrismaClient();
 
+// Integração WebSocket: emitir QR code/status em tempo real
+let io: any = null;
+export function setSocketIO(socketIOInstance: any) {
+  io = socketIOInstance;
+}
+
+function emitSessionUpdate(session_id: string, data: any) {
+  if (io) {
+    io.to(session_id).emit('whatsapp-session-update', { session_id, ...data });
+  }
+}
 // Aplicar middleware de autenticação a todas as rotas
 router.use(authenticateJWT);
 
@@ -50,16 +44,24 @@ async function getEmpresaId(req: Request): Promise<number | null> {
  */
 router.post('/sessions', async (req: Request, res: Response) => {
   try {
-    const empresaId = await getEmpresaId(req);
+    let empresaId = await getEmpresaId(req);
     if (!empresaId) {
-      return res.status(403).json({ error: 'Empresa não identificada' });
+      if (!(req as any).user?.is_superuser) {
+        return res.status(403).json({ error: 'Empresa não identificada' });
+      }
+      empresaId = 1; // default for superuser
     }
     const { telefone } = req.body;
-    const result = await baileysService.startSession(empresaId, telefone);
+  const result = await whatsappService.startSession(empresaId, telefone, emitSessionUpdate);
+    emitSessionUpdate(result.sessionId, {
+      status: result.status,
+      qr: result.qr,
+      message: 'Sessão criada com sucesso'
+    });
     res.json({
       success: true,
       message: 'Sessão criada com sucesso',
-      sessionId: result.sessionId,
+      session_id: result.sessionId,
       status: result.status,
       qr: result.qr
     });
@@ -75,11 +77,14 @@ router.post('/sessions', async (req: Request, res: Response) => {
  */
 router.get('/sessions', async (req: Request, res: Response) => {
   try {
-    const empresaId = await getEmpresaId(req);
+    let empresaId = await getEmpresaId(req);
     if (!empresaId) {
-      return res.status(403).json({ error: 'Empresa não identificada' });
+      if (!(req as any).user?.is_superuser) {
+        return res.status(403).json({ error: 'Empresa não identificada' });
+      }
+      empresaId = 1; // default for superuser
     }
-    const sessions = baileysService.listEmpresaSessions(empresaId);
+  const sessions = whatsappService.listEmpresaSessions(empresaId);
     res.json({ sessions });
   } catch (error: any) {
     console.error('❌ Erro ao listar sessões:', error);
@@ -93,15 +98,22 @@ router.get('/sessions', async (req: Request, res: Response) => {
  */
 router.get('/sessions/:sessionId/qr', async (req: Request, res: Response) => {
   try {
-    const { sessionId } = req.params;
-    const empresaId = await getEmpresaId(req);
-    const parsed = baileysService.parseSessionId(sessionId);
-    if (!parsed || parsed.empresaId !== empresaId) {
+    const session_id = req.params.sessionId;
+    let empresaId = await getEmpresaId(req);
+    if (!empresaId) {
+      if (!(req as any).user?.is_superuser) {
+        return res.status(403).json({ error: 'Empresa não identificada' });
+      }
+      empresaId = 1; // default for superuser
+    }
+  const parsed = whatsappService.parseSessionId(session_id);
+    if (parsed && parsed.empresaId !== empresaId && !(req as any).user?.is_superuser) {
       return res.status(403).json({ error: 'Acesso negado' });
     }
-    const qr = baileysService.getSessionQR(sessionId);
-    const status = baileysService.getSessionStatus(sessionId);
-    res.json({ qr, status, sessionId });
+  const qr = whatsappService.getSessionQR(session_id);
+  const status = whatsappService.getSessionStatus(session_id);
+  emitSessionUpdate(session_id, { qr, status });
+  res.json({ qr, status, session_id });
   } catch (error: any) {
     console.error('Erro ao obter QR:', error);
     res.status(500).json({ error: error.message || 'Erro ao obter QR' });
@@ -114,15 +126,22 @@ router.get('/sessions/:sessionId/qr', async (req: Request, res: Response) => {
  */
 router.get('/sessions/:sessionId/status', async (req: Request, res: Response) => {
   try {
-    const { sessionId } = req.params;
-    const empresaId = await getEmpresaId(req);
-    const parsed = baileysService.parseSessionId(sessionId);
-    if (!parsed || parsed.empresaId !== empresaId) {
+    const session_id = req.params.sessionId;
+    let empresaId = await getEmpresaId(req);
+    if (!empresaId) {
+      if (!(req as any).user?.is_superuser) {
+        return res.status(403).json({ error: 'Empresa não identificada' });
+      }
+      empresaId = 1; // default for superuser
+    }
+  const parsed = whatsappService.parseSessionId(session_id);
+    if (parsed && parsed.empresaId !== empresaId && !(req as any).user?.is_superuser) {
       return res.status(403).json({ error: 'Acesso negado' });
     }
-    const status = baileysService.getSessionStatus(sessionId);
-    const qr = baileysService.getSessionQR(sessionId);
-    res.json({ sessionId, status, hasQR: !!qr });
+  const status = whatsappService.getSessionStatus(session_id);
+  const qr = whatsappService.getSessionQR(session_id);
+  emitSessionUpdate(session_id, { status, hasQR: !!qr });
+  res.json({ session_id, status, hasQR: !!qr });
   } catch (error: any) {
     console.error('Erro ao obter status:', error);
     res.status(500).json({ error: error.message || 'Erro ao obter status' });
@@ -135,14 +154,21 @@ router.get('/sessions/:sessionId/status', async (req: Request, res: Response) =>
  */
 router.delete('/sessions/:sessionId', async (req: Request, res: Response) => {
   try {
-    const { sessionId } = req.params;
-    const empresaId = await getEmpresaId(req);
-    const parsed = baileysService.parseSessionId(sessionId);
-    if (!parsed || parsed.empresaId !== empresaId) {
+    const session_id = req.params.sessionId;
+    let empresaId = await getEmpresaId(req);
+    if (!empresaId) {
+      if (!(req as any).user?.is_superuser) {
+        return res.status(403).json({ error: 'Empresa não identificada' });
+      }
+      empresaId = 1; // default for superuser
+    }
+  const parsed = whatsappService.parseSessionId(session_id);
+    if (parsed && parsed.empresaId !== empresaId && !(req as any).user?.is_superuser) {
       return res.status(403).json({ error: 'Acesso negado' });
     }
-    const success = await baileysService.disconnectSession(sessionId);
-    res.json({ success, message: 'Sessão desconectada' });
+  const success = await whatsappService.disconnectSession(session_id);
+  emitSessionUpdate(session_id, { status: 'disconnected', message: 'Sessão desconectada' });
+  res.json({ success, message: 'Sessão desconectada' });
   } catch (error: any) {
     console.error('Erro ao desconectar sessão:', error);
     res.status(500).json({ error: error.message || 'Erro ao desconectar sessão' });
@@ -157,15 +183,21 @@ router.post('/sessions/:sessionId/send', async (req: Request, res: Response) => 
   try {
     const { sessionId } = req.params;
     const { to, message } = req.body;
-    const empresaId = await getEmpresaId(req);
-    const parsed = baileysService.parseSessionId(sessionId);
-    if (!parsed || parsed.empresaId !== empresaId) {
+    let empresaId = await getEmpresaId(req);
+    if (!empresaId) {
+      if (!(req as any).user?.is_superuser) {
+        return res.status(403).json({ error: 'Empresa não identificada' });
+      }
+      empresaId = 1; // default for superuser
+    }
+  const parsed = whatsappService.parseSessionId(sessionId);
+    if (parsed && parsed.empresaId !== empresaId && !(req as any).user?.is_superuser) {
       return res.status(403).json({ error: 'Acesso negado' });
     }
     if (!to || !message) {
       return res.status(400).json({ error: 'Campos "to" e "message" são obrigatórios' });
     }
-    const result = await baileysService.sendMessage(sessionId, to, message);
+  const result = await whatsappService.sendMessage(sessionId, to, message);
     res.json({ success: true, result });
   } catch (error: any) {
     console.error('Erro ao enviar mensagem:', error);
@@ -179,11 +211,14 @@ router.post('/sessions/:sessionId/send', async (req: Request, res: Response) => 
  */
 router.delete('/sessions/all', async (req: Request, res: Response) => {
   try {
-    const empresaId = await getEmpresaId(req);
+    let empresaId = await getEmpresaId(req);
     if (!empresaId) {
-      return res.status(403).json({ error: 'Empresa não identificada' });
+      if (!(req as any).user?.is_superuser) {
+        return res.status(403).json({ error: 'Empresa não identificada' });
+      }
+      empresaId = 1; // default for superuser
     }
-    const disconnected = await baileysService.disconnectAllEmpresaSessions(empresaId);
+  const disconnected = await whatsappService.disconnectAllEmpresaSessions(empresaId);
     res.json({ success: true, disconnected, message: `${disconnected} sessões desconectadas` });
   } catch (error: any) {
     console.error('Erro ao desconectar todas as sessões:', error);
