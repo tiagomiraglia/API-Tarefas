@@ -23,6 +23,7 @@ interface SessionInfo {
 
 const activeSessions = new Map<string, SessionInfo>();
 const AUTH_DIR = path.join(__dirname, '..', 'whatsapp_auth');
+const MAX_SESSIONS_PER_EMPRESA = 3; // Limitar para não sobrecarregar
 
 function ensureAuthDir(sessionId: string): string {
   const dir = path.join(AUTH_DIR, sessionId);
@@ -55,6 +56,13 @@ export function parseSessionId(sessionId: string): { empresaId: number; telefone
 
 export async function startSession(empresaId: number, telefone?: string, onSessionUpdate?: (sessionId: string, data: any) => void): Promise<{ sessionId: string; qr: string | null; status: string }> {
   const sessionId = generateSessionId(empresaId, telefone);
+
+  // Verificar limite de sessões por empresa
+  const empresaSessions = Array.from(activeSessions.values()).filter(s => s.empresaId === empresaId);
+  if (empresaSessions.length >= MAX_SESSIONS_PER_EMPRESA) {
+    throw new Error(`Limite de ${MAX_SESSIONS_PER_EMPRESA} sessões ativas por empresa atingido`);
+  }
+
   const sessionDir = ensureAuthDir(sessionId);
 
   // limpar auth antigo para sessão nova
@@ -68,7 +76,22 @@ export async function startSession(empresaId: number, telefone?: string, onSessi
   }
 
   const client = new Client({
-    puppeteer: { headless: true, args: ['--no-sandbox', '--disable-setuid-sandbox'] },
+    puppeteer: {
+      headless: true,
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-accelerated-2d-canvas',
+        '--no-first-run',
+        '--no-zygote',
+        '--disable-gpu',
+        '--disable-web-security',
+        '--disable-features=VizDisplayCompositor',
+        '--memory-pressure-off',
+        '--max_old_space_size=512'
+      ]
+    },
     authStrategy: new LocalAuth({ clientId: sessionId, dataPath: sessionDir })
   });
 
@@ -245,11 +268,34 @@ export function listActiveSessions() {
   return Array.from(activeSessions.values()).map(s => ({ sessionId: s.sessionId, empresaId: s.empresaId, telefone: s.telefone, status: s.status, hasQR: !!s.qr }));
 }
 
-export async function loadActiveSessions(onSessionUpdate?: (sessionId: string, data: any) => void): Promise<void> {
-  try {
-    const rows = await getPrisma().whatsAppSession.findMany({ where: { status: { in: ['connecting', 'connected', 'qr'] } } });
-    for (const r of rows) {
-      try { await startSession(r.empresa_id, r.telefone || undefined, onSessionUpdate); } catch (e) { console.error('Erro ao restaurar sessão', r.session_id, e); }
+export async function cleanupInactiveSessions(): Promise<number> {
+  let cleaned = 0;
+  const now = Date.now();
+  const maxAge = 24 * 60 * 60 * 1000; // 24 horas
+
+  for (const [sessionId, info] of activeSessions.entries()) {
+    // Se a sessão está desconectada há mais de 24h, remover
+    if (info.status === 'disconnected') {
+      try {
+        await disconnectSession(sessionId);
+        cleaned++;
+      } catch (err) {
+        console.error('Erro ao limpar sessão inativa:', sessionId, err);
+      }
     }
-  } catch (err) { console.error('Erro ao carregar sessões do DB:', err); }
+  }
+
+  return cleaned;
 }
+
+// Executar limpeza a cada 30 minutos
+setInterval(async () => {
+  try {
+    const cleaned = await cleanupInactiveSessions();
+    if (cleaned > 0) {
+      console.log(`🧹 Limpou ${cleaned} sessões inativas`);
+    }
+  } catch (err) {
+    console.error('Erro na limpeza automática:', err);
+  }
+}, 30 * 60 * 1000);
