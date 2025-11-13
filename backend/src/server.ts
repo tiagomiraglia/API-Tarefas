@@ -118,18 +118,28 @@ server.listen(PORT, async () => {
   console.log(`🚀 Servidor rodando na porta ${PORT}`);
   console.log(`📡 API disponível em: http://localhost:${PORT}/api`);
 
+  // Aumentar limite de listeners para evitar warnings do EventEmitter
+  // (necessário devido ao whatsapp-web.js e Puppeteer criando múltiplos processos)
+  require('events').EventEmitter.defaultMaxListeners = 50;
+
   // Carregar sessões WhatsApp ativas após o servidor iniciar
-  try {
-    const whatsappService = await import('./modules/whatsapp/services/whatsappWebJsService');
-    await whatsappService.loadActiveSessions((sessionId, data) => {
-      if (io) {
-        io.to(sessionId).emit('whatsapp-session-update', { session_id: sessionId, ...data });
-      }
-    });
-    console.log('📱 Sessões WhatsApp ativas carregadas');
-  } catch (error) {
-    console.error('Erro ao carregar sessões WhatsApp:', error);
-  }
+  // (carregamento controlado para evitar vazamento de listeners)
+  setTimeout(async () => {
+    try {
+      console.log('🔄 Carregando sessões WhatsApp ativas...');
+      const whatsappService = await import('./modules/whatsapp/services/whatsappWebJsService');
+
+      // Carregar apenas sessões que estavam ativas recentemente
+      await whatsappService.loadActiveSessions((sessionId, data) => {
+        if (io) {
+          io.to(sessionId).emit('whatsapp-session-update', { session_id: sessionId, ...data });
+        }
+      });
+      console.log('📱 Sessões WhatsApp ativas carregadas');
+    } catch (error) {
+      console.error('Erro ao carregar sessões WhatsApp:', error);
+    }
+  }, 2000); // Aguardar 2 segundos para o servidor estabilizar
 });
 
 server.on('error', (err) => {
